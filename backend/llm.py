@@ -55,13 +55,24 @@ async def chat_completions(request: Request):
     logger.info(f"  ═══════════════════════════════════════════════")
     logger.info(f"  ⬡ VAPI → SERVER   POST /chat/completions ({mode})")
     logger.info(f"  ⬡ VAPI → SERVER   Model: {model_name}")
-    logger.info(f"  ⬡ VAPI → SERVER   {len(messages)} messages in context:")
 
-    for i, msg in enumerate(messages):
-        role = msg.get("role", "?")
-        content = _truncate(msg.get("content", ""))
-        icon = {"user": "🗣", "assistant": "🤖", "system": "⚙️"}.get(role, " •")
-        logger.info(f"  ⬡ VAPI → SERVER    [{i}] {icon} {role:9s} {content}")
+    last_user_msg = ""
+    last_assistant_msg = ""
+    history_count = len(messages)
+    if messages:
+        last = messages[-1]
+        if last.get("role") == "user":
+            last_user_msg = last.get("content", "")
+        for msg in reversed(messages[:-1]):
+            if msg.get("role") == "assistant":
+                last_assistant_msg = msg.get("content", "")
+                break
+
+    if last_user_msg:
+        logger.info(f"  🗣 User replied:     {_truncate(last_user_msg)}")
+    if last_assistant_msg:
+        logger.info(f"  🤖 Vapi just said:   {_truncate(last_assistant_msg)}")
+    logger.info(f"  📚 Conversation history: {history_count} messages total")
 
     # ── Build LangChain messages ─────────────────────────────
     langchain_messages = _to_langchain(messages)
@@ -70,7 +81,7 @@ async def chat_completions(request: Request):
 
     # ── Outbound to Groq ─────────────────────────────────────
     logger.info(f"  ═══════════════════════════════════════════════")
-    logger.info(f"  ⬡ SERVER → GROQ    Sending to {model_name}...")
+    logger.info(f"  ⬡ SERVER → GROQ    Sending {history_count} messages to {model_name}...")
 
     if streaming:
         async def generate():
