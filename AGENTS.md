@@ -8,8 +8,8 @@ This file provides guidance to AI coding assistants (OpenCode, Cursor, Gemini CL
 # Install dependencies
 pip install -r backend/requirements.txt
 
-# Run dev server (always from project root, not from backend/)
-uvicorn backend.main:app --reload
+# Run dev server (from backend/ — matches Render rootDir)
+cd backend && uvicorn main:app --reload
 
 # Health check
 curl http://localhost:8000/health
@@ -20,7 +20,7 @@ curl -X POST http://localhost:8000/chat/completions \
   -d '{"model": "llama-3.1-8b-instant", "stream": false, "messages": [{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": "Hello"}]}'
 
 # Test Groq client directly
-python -c "import asyncio; from backend.groq_client import groq_client; print(asyncio.run(groq_client.generate([], 'Say hello')))"
+python -c "import asyncio; from groq_client import groq_client; print(asyncio.run(groq_client.generate([], 'Say hello')))"
 
 # Local tunnel for Vapi webhook testing
 ngrok http 8000
@@ -68,7 +68,7 @@ Customer speaks
 
 **Signature verification:** `x-vapi-signature` is HMAC-SHA256 of raw body using `VAPI_VERIFY_KEY`. Logs a warning but does NOT reject requests when verification fails. Set `VAPI_VERIFY_KEY=` (empty) to silence warnings during local dev.
 
-**Import paths:** All modules use `from backend.X import Y`. Server must be started from project root (`/home/hassan-jan/ai-voice-calling/`), not from inside `backend/`.
+**Import paths:** All modules use flat imports (`from config import settings`, no `backend.` prefix). Server must be started from `backend/` directory. On Render, `rootDir: backend` handles this automatically.
 
 ## Phased Roadmap
 
@@ -93,4 +93,4 @@ Full planned file structure and tech stack: `docs/superpowers/specs/2026-05-08-a
 
 ## Deployment Target
 
-Render Web Service: `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`. The `render.yaml` is not yet created; see `docs/superpowers/plans/2026-05-08-phase1-voice-call-skeleton.md` for its content.
+Render Web Service: `uvicorn main:app --host 0.0.0.0 --port $PORT` (runs from `backend/` rootDir).
