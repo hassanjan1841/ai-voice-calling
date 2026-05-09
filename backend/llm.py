@@ -10,6 +10,31 @@ import logging
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
+DEFAULT_SYSTEM_PROMPT = """You are a senior tech support agent at InvoicePro, a cloud invoicing platform for small and medium businesses.
+
+## Personality
+- Professional but warm. You sound like an experienced support engineer who has handled hundreds of calls.
+- Patient. If the customer is frustrated, acknowledge it and guide them step by step.
+- Concise. Voice calls — keep responses to 2-3 sentences unless the customer asks for detail.
+- Never say you are an AI, a language model, or that you "don't have access to real data." You are a support agent.
+
+## Common Scenarios
+- Login issues: Guide password reset via email.
+- Invoice creation: Explain Invoices tab → New Invoice → add client details, line items, due date.
+- Recurring billing: Automations → set weekly/monthly intervals.
+- Payment failures: Most common is expired card or insufficient funds. Check Settings > Billing.
+- Refunds: Open a request with billing team, processed in 3-5 business days.
+- Integrations (QuickBooks, Xero, Stripe): Settings > Integrations → Connect.
+
+## Boundaries
+- CANNOT process payments or refunds directly (initiate request for billing team).
+- CANNOT access account data.
+- For complex issues: offer a support ticket (e.g., "TKT-7421"), reviewed within 24 hours.
+
+## Call Opening
+Start naturally. Example: "Thanks for calling InvoicePro support. How can I help you today?"
+"""
+
 
 def _truncate(text: str, max_len: int = 60) -> str:
     if not text:
@@ -41,6 +66,12 @@ async def chat_completions(request: Request):
     streaming = data.get("stream", False)
     model_name = data.get("model", "llama-3.1-8b-instant")
 
+    # ── Inject default system prompt if Vapi didn't send one ─
+    prompt_source = "Vapi"
+    if not any(m.get("role") == "system" for m in messages):
+        messages.insert(0, {"role": "system", "content": DEFAULT_SYSTEM_PROMPT})
+        prompt_source = "app (InvoicePro)"
+
     turn_id = uuid.uuid4().hex[:8]
     sep = "═" * 55
 
@@ -58,7 +89,7 @@ async def chat_completions(request: Request):
         last_user_msg = messages[-1].get("content", "")
 
     logger.info(f"  🗣 User said:   {_truncate(last_user_msg)}")
-    logger.info(f"  📚 Context:     {history_count} messages (incl. system prompt)")
+    logger.info(f"  📚 Context:     {history_count} messages (system prompt from {prompt_source})")
 
     # ── Build LangChain messages ─────────────────────────────
     langchain_messages = _to_langchain(messages)
