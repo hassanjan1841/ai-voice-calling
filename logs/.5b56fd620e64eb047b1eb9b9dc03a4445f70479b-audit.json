@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/home/hassan-jan/ai-voice-calling/logs/.5b56fd620e64eb047b1eb9b9dc03a4445f70479b-audit.json",
+    "files": [
+        {
+            "date": 1778333737418,
+            "name": "/home/hassan-jan/ai-voice-calling/logs/application-2026-05-09.log",
+            "hash": "74096ee3a8f531b96917f9ce77d620dd5b6c70f30e626ab96599aaa36b834c28"
+        }
+    ],
+    "hashType": "sha256"
+}
