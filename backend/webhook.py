@@ -36,24 +36,43 @@ async def handle_webhook(request: Request):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid JSON: {e}")
 
-    # Vapi wraps all events in a top-level "message" object with a "type" field
     msg = data.get("message", {})
     event_type = msg.get("type", "unknown")
-    logger.info(f"Vapi event: {event_type} | keys: {list(msg.keys())}")
+    call_id = msg.get("call", {}).get("id", "?") if isinstance(msg.get("call"), dict) else "?"
+
+    icons = {
+        "assistant-request": "📞",
+        "end-of-call-report": "📋",
+        "conversation-update": "💬",
+        "speech-update": "🎤",
+        "status-update": "🔵",
+        "assistant.started": "🤖",
+        "user-interrupted": "✋",
+        "function-call": "🔧",
+    }
+    icon = icons.get(event_type, " •")
+
+    logger.info(f"  {icon} VAPI → WEBHOOK  {event_type}  (call: {call_id})")
 
     if event_type == "assistant-request":
         return {}
 
     if event_type == "end-of-call-report":
-        logger.info(f"Call ended: {msg.get('endedReason', 'unknown')} | transcript length: {len(msg.get('transcript', ''))}")
+        reason = msg.get("endedReason", "unknown")
+        transcript = msg.get("transcript", "")
+        logger.info(f"  {icon} VAPI → WEBHOOK  Call ended: {reason} | transcript: {len(transcript)} chars")
         return {}
 
     if event_type == "conversation-update":
         return {}
 
     if event_type == "function-call":
-        logger.info(f"Function call: {msg.get('functionCall', {}).get('name')}")
+        fn_name = msg.get("functionCall", {}).get("name", "?")
+        logger.info(f"  {icon} VAPI → WEBHOOK  Function call: {fn_name}")
         return {}
 
-    logger.info(f"Unhandled Vapi event: {event_type}")
+    if event_type in ("status-update", "speech-update", "assistant.started", "user-interrupted"):
+        return {}
+
+    logger.info(f"  {icon} VAPI → WEBHOOK  Unhandled: {event_type}")
     return {}
