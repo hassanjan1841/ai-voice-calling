@@ -9,7 +9,7 @@ router = APIRouter()
 
 
 def verify_vapi_signature(request: Request, body: bytes) -> bool:
-    from backend.config import settings
+    from config import settings
 
     if not settings.vapi_verify_key:
         return True

@@ -1,7 +1,7 @@
 from fastapi import FastAPI
-from backend.config import settings
-from backend.webhook import router as webhook_router
-from backend.llm import router as llm_router
+from config import settings
+from webhook import router as webhook_router
+from llm import router as llm_router
 import logging
 
 logging.basicConfig(level=logging.INFO)

@@ -1,6 +1,6 @@
 from langchain_groq import ChatGroq
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
-from backend.config import settings
+from config import settings
 
 _system_prompt = """You are a helpful voice assistant for a business.
 You answer questions naturally and conversationally — this is a phone call, so keep responses concise.

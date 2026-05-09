@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
-from backend.groq_client import groq_client
+from groq_client import groq_client
 import json
 import time
 import uuid
