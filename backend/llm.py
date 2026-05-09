@@ -50,29 +50,15 @@ async def chat_completions(request: Request):
     logger.info(f"║  NEW VOICE TURN          turn_{turn_id}  ║")
     logger.info("╚" + sep + "╝")
 
-    # ── Inbound from Vapi ───────────────────────────────────
+    # ── Extract user's input and history count ──────────────
     mode = "streaming" if streaming else "non-streaming"
-    logger.info(f"  ═══════════════════════════════════════════════")
-    logger.info(f"  ⬡ VAPI → SERVER   POST /chat/completions ({mode})")
-    logger.info(f"  ⬡ VAPI → SERVER   Model: {model_name}")
-
     last_user_msg = ""
-    last_assistant_msg = ""
     history_count = len(messages)
-    if messages:
-        last = messages[-1]
-        if last.get("role") == "user":
-            last_user_msg = last.get("content", "")
-        for msg in reversed(messages[:-1]):
-            if msg.get("role") == "assistant":
-                last_assistant_msg = msg.get("content", "")
-                break
+    if messages and messages[-1].get("role") == "user":
+        last_user_msg = messages[-1].get("content", "")
 
-    if last_user_msg:
-        logger.info(f"  🗣 User replied:     {_truncate(last_user_msg)}")
-    if last_assistant_msg:
-        logger.info(f"  🤖 Vapi just said:   {_truncate(last_assistant_msg)}")
-    logger.info(f"  📚 Conversation history: {history_count} messages total")
+    logger.info(f"  🗣 User said:   {_truncate(last_user_msg)}")
+    logger.info(f"  📚 Context:     {history_count} messages (incl. system prompt)")
 
     # ── Build LangChain messages ─────────────────────────────
     langchain_messages = _to_langchain(messages)
@@ -81,22 +67,22 @@ async def chat_completions(request: Request):
 
     # ── Outbound to Groq ─────────────────────────────────────
     logger.info(f"  ═══════════════════════════════════════════════")
-    logger.info(f"  ⬡ SERVER → GROQ    Sending {history_count} messages to {model_name}...")
+    logger.info(f"  ⬡ SERVER → GROQ  Sending to {model_name}...")
 
     if streaming:
         async def generate():
             chunk_count = 0
             total_chars = 0
-            first = True
+            full_text = ""
 
             async for chunk in groq_client.llm.astream(langchain_messages):
                 if chunk.content:
                     chunk_count += 1
                     total_chars += len(chunk.content)
+                    full_text += chunk.content
 
-                    if first:
-                        logger.info(f"  ⬡ GROQ → SERVER    Response received — streaming...")
-                        first = False
+                    if chunk_count == 1:
+                        logger.info(f"  ⬡ GROQ → SERVER  Response received — streaming...")
 
                     payload = {
                         "id": response_id,
@@ -107,8 +93,11 @@ async def chat_completions(request: Request):
                     }
                     yield f"data: {json.dumps(payload)}\n\n"
 
-            # ── Stream complete ──────────────────────────────
-            logger.info(f"  ⬡ SERVER → VAPI    Streaming complete: {chunk_count} chunks, {total_chars} chars")
+            # ── Stream complete — show what Groq generated ───
+            logger.info(f"  ═══════════════════════════════════════════════")
+            logger.info(f"  ⬡ GROQ generated:")
+            logger.info(f"  📝 {_truncate(full_text, max_len=300)}")
+            logger.info(f"  ⬡ SERVER → VAPI  Sent ({chunk_count} chunks, {total_chars} chars)")
             logger.info("╔" + sep + "╗")
             logger.info(f"║  TURN COMPLETE           turn_{turn_id}            ║")
             logger.info("╚" + sep + "╝")
@@ -129,8 +118,10 @@ async def chat_completions(request: Request):
     # ── Non-streaming path ────────────────────────────────────
     response = await groq_client.llm.ainvoke(langchain_messages)
     response_text = response.content
-    logger.info(f"  ⬡ GROQ → SERVER    Response: {_truncate(response_text)}")
-    logger.info(f"  ⬡ SERVER → VAPI    Sent ({len(response_text)} chars)")
+    logger.info(f"  ═══════════════════════════════════════════════")
+    logger.info(f"  ⬡ GROQ generated:")
+    logger.info(f"  📝 {_truncate(response_text, max_len=300)}")
+    logger.info(f"  ⬡ SERVER → VAPI  Sent ({len(response_text)} chars)")
     logger.info("╔" + sep + "╗")
     logger.info(f"║  TURN COMPLETE           turn_{turn_id}            ║")
     logger.info("╚" + sep + "╝")
