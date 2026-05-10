@@ -9,6 +9,11 @@
             "date": 1778333737418,
             "name": "/home/hassan-jan/ai-voice-calling/logs/application-2026-05-09.log",
             "hash": "74096ee3a8f531b96917f9ce77d620dd5b6c70f30e626ab96599aaa36b834c28"
+        },
+        {
+            "date": 1778396882865,
+            "name": "/home/hassan-jan/ai-voice-calling/logs/application-2026-05-10.log",
+            "hash": "23ad04bacab1cf190a6f50e525004b31f3e4571419e1e4eb061a521378535086"
         }
     ],
     "hashType": "sha256"

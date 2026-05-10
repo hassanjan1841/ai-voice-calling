@@ -71,7 +71,7 @@ async def handle_webhook(request: Request):
         logger.info(f"  {icon} VAPI → WEBHOOK  Function call: {fn_name}")
         return {}
 
-    if event_type in ("status-update", "speech-update", "assistant.started", "user-interrupted"):
+    if event_type in ("status-update", "speech-update", "assistant.started", "user-interrupted", "hang"):
         return {}
 
     logger.info(f"  {icon} VAPI → WEBHOOK  Unhandled: {event_type}")
