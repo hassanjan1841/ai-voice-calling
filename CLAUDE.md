@@ -8,8 +8,8 @@ This file provides guidance to AI coding assistants (Claude Code, OpenCode, Curs
 # Install dependencies
 pip install -r backend/requirements.txt
 
-# Run dev server (always from project root, not from backend/)
-uvicorn backend.main:app --reload
+# Run dev server (from backend/ — matches Render rootDir, flat imports work)
+cd backend && uvicorn main:app --reload
 
 # Health check
 curl http://localhost:8000/health
